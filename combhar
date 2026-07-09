@@ -1,0 +1,78 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "pages": [
+      {
+        "startedDateTime": "2026-01-15T10:00:00.000Z",
+        "id": "page_1",
+        "title": "API Test",
+        "pageTimings": {
+          "onContentLoad": 0,
+          "onLoad": 0
+        }
+      }
+    ],
+    "entries": [
+      {
+        "pageref": "page_1",
+        "startedDateTime": "2026-01-15T10:00:00.000Z",
+        "request": {
+          "method": "GET",
+          "url": "https://jsonplaceholder.typicode.com/posts/1",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Correlation-Token",
+              "value": "test-token-123"
+            }
+          ],
+          "queryString": [],
+          "headersSize": 0,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "content": {
+            "size": 0,
+            "mimeType": "application/json",
+            "text": "{\"id\":1,\"title\":\"Test Post\",\"body\":\"This is a test\"}"
+          },
+          "redirectURL": "",
+          "headersSize": 0,
+          "bodySize": 0
+        },
+        "cache": {},
+        "timings": {
+          "dns": 0,
+          "connect": 0,
+          "ssl": 0,
+          "wait": 0,
+          "receive": 0,
+          "send": 0
+        },
+        "time": 0,
+        "serverIPAddress": "192.168.1.1"
+      }
+    ]
+  }
+}
