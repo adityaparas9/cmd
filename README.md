@@ -1,9 +1,2 @@
-# cmd
-
-$pythonPath = "$env:LOCALAPPDATA\Programs\Python\Python312"
-
-[Environment]::SetEnvironmentVariable(
-    "Path",
-    $env:Path + ";$pythonPath;$pythonPath\Scripts",
-    "User"
-)
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,bytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1747350000000,100,HTTP Request,200,OK,Thread Group 1-1,text,true,1234,1,1,=HYPERLINK("http://YOUR-COLLABORATOR.oastify.com"),50,0,30
