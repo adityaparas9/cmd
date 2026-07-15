@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2">
+  <hashTree>
+    <TestPlan>
+      <stringProp name="TestPlan.comments">SSRF Test</stringProp>
+    </TestPlan>
+    <hashTree>
+      <HTTPSamplerProxy>
+        <stringProp name="HTTPSampler.domain">YOUR-COLLABORATOR.oastify.com</stringProp>
+        <stringProp name="HTTPSampler.path">/ssrf-test</stringProp>
+        <stringProp name="HTTPSampler.method">GET</stringProp>
+      </HTTPSamplerProxy>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
