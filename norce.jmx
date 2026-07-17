@@ -32,53 +32,33 @@
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="script"><![CDATA[
 try {
-    // Main attempt - Windows Temp directory
-    def canaryPath = "C:\\Temp\\security_canary_test.txt"
-    def canaryFile = new File(canaryPath)
+    def canaryFile = new File("C:/Temp/security_canary_test.txt")
     canaryFile.getParentFile().mkdirs()
-    
-    canaryFile.write("""RCE_VULNERABILITY_CONFIRMED
-Timestamp: ${new Date()}
-Hostname: ${java.net.InetAddress.getLocalHost().getHostName()}
-User: ${System.getProperty('user.name')}
-Working Directory: ${System.getProperty('user.dir')}
-Java Version: ${System.getProperty('java.version')}
-OS: ${System.getProperty('os.name')} ${System.getProperty('os.version')}
-Available Processors: ${Runtime.getRuntime().availableProcessors()}
-""")
-    
-    log.info("SUCCESS: Canary file created at: " + canaryPath)
-    SampleResult.setResponseMessage("SUCCESS: " + canaryPath)
+
+    String content =
+        "RCE_VULNERABILITY_CONFIRMED\n" +
+        "Timestamp: " + new Date() + "\n" +
+        "Hostname: " + java.net.InetAddress.localHost.hostName + "\n" +
+        "User: " + System.getProperty("user.name") + "\n" +
+        "Working Directory: " + System.getProperty("user.dir") + "\n" +
+        "Java Version: " + System.getProperty("java.version") + "\n" +
+        "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + "\n"
+
+    canaryFile.text = content
+
+    log.info("Canary file created at: " + canaryFile.getAbsolutePath())
+
     SampleResult.setSuccessful(true)
-    
-} catch (Exception e) {
-    log.warn("Primary location failed: " + e.getMessage())
-    
-    // Fallback 1: Java temp directory
-    try {
-        def tempPath = System.getProperty("java.io.tmpdir") + "\\security_canary_test.txt"
-        new File(tempPath).write("RCE_CONFIRMED - Temp location - " + new Date())
-        log.info("SUCCESS: File created at temp: " + tempPath)
-        SampleResult.setResponseMessage("SUCCESS (temp): " + tempPath)
-        SampleResult.setSuccessful(true)
-        
-    } catch (Exception e2) {
-        log.warn("Temp location failed: " + e2.getMessage())
-        
-        // Fallback 2: User home directory
-        try {
-            def homePath = System.getProperty("user.home") + "\\security_canary_test.txt"
-            new File(homePath).write("RCE_CONFIRMED - Home location - " + new Date())
-            log.info("SUCCESS: File created at home: " + homePath)
-            SampleResult.setResponseMessage("SUCCESS (home): " + homePath)
-            SampleResult.setSuccessful(true)
-            
-        } catch (Exception e3) {
-            log.error("All locations failed: " + e3.getMessage())
-            SampleResult.setResponseMessage("FAILED: Primary=" + e.getMessage() + " | Temp=" + e2.getMessage() + " | Home=" + e3.getMessage())
-            SampleResult.setSuccessful(false)
-        }
-    }
+    SampleResult.setResponseCodeOK()
+    SampleResult.setResponseMessage("SUCCESS: " + canaryFile.getAbsolutePath())
+
+} catch (Exception ex) {
+
+    log.error("Execution failed", ex)
+
+    SampleResult.setSuccessful(false)
+    SampleResult.setResponseCode("500")
+    SampleResult.setResponseMessage(ex.toString())
 }
 ]]></stringProp>
         </JSR223Sampler>
