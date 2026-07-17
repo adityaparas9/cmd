@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Security Validation Test" enabled="true">
-      <stringProp name="TestPlan.comments">Safe RCE Detection Test - Creates canary file only</stringProp>
+      <stringProp name="TestPlan.comments">Safe RCE Detection Test</stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -30,41 +30,60 @@
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="script">
-// SAFE DETECTION ONLY - Creates a harmless file to prove code execution
+          <stringProp name="script"><![CDATA[
 try {
+    // Main attempt - Windows Temp directory
     def canaryPath = "C:\\Temp\\security_canary_test.txt"
     def canaryFile = new File(canaryPath)
-    canaryFile.write("RCE_VULNERABILITY_CONFIRMED\n" +
-                     "Timestamp: ${new Date()}\n" +
-                     "Hostname: ${java.net.InetAddress.localHost.hostName}\n" +
-                     "User: ${System.getProperty('user.name')}\n" +
-                     "Working Directory: ${System.getProperty('user.dir')}\n" +
-                     "Java Version: ${System.getProperty('java.version')}\n" +
-                     "OS: ${System.getProperty('os.name')} ${System.getProperty('os.version')}")
+    canaryFile.getParentFile().mkdirs()
     
-    log.info("CANARY FILE CREATED SUCCESSFULLY at: " + canaryPath)
-    SampleResult.setResponseMessage("SUCCESS: Canary file created")
+    canaryFile.write("""RCE_VULNERABILITY_CONFIRMED
+Timestamp: ${new Date()}
+Hostname: ${java.net.InetAddress.getLocalHost().getHostName()}
+User: ${System.getProperty('user.name')}
+Working Directory: ${System.getProperty('user.dir')}
+Java Version: ${System.getProperty('java.version')}
+OS: ${System.getProperty('os.name')} ${System.getProperty('os.version')}
+Available Processors: ${Runtime.getRuntime().availableProcessors()}
+""")
+    
+    log.info("SUCCESS: Canary file created at: " + canaryPath)
+    SampleResult.setResponseMessage("SUCCESS: " + canaryPath)
     SampleResult.setSuccessful(true)
     
 } catch (Exception e) {
-    log.error("File creation failed: " + e.getMessage())
-    SampleResult.setResponseMessage("FAILED: " + e.getMessage())
-    SampleResult.setSuccessful(false)
+    log.warn("Primary location failed: " + e.getMessage())
+    
+    // Fallback 1: Java temp directory
+    try {
+        def tempPath = System.getProperty("java.io.tmpdir") + "\\security_canary_test.txt"
+        new File(tempPath).write("RCE_CONFIRMED - Temp location - " + new Date())
+        log.info("SUCCESS: File created at temp: " + tempPath)
+        SampleResult.setResponseMessage("SUCCESS (temp): " + tempPath)
+        SampleResult.setSuccessful(true)
+        
+    } catch (Exception e2) {
+        log.warn("Temp location failed: " + e2.getMessage())
+        
+        // Fallback 2: User home directory
+        try {
+            def homePath = System.getProperty("user.home") + "\\security_canary_test.txt"
+            new File(homePath).write("RCE_CONFIRMED - Home location - " + new Date())
+            log.info("SUCCESS: File created at home: " + homePath)
+            SampleResult.setResponseMessage("SUCCESS (home): " + homePath)
+            SampleResult.setSuccessful(true)
+            
+        } catch (Exception e3) {
+            log.error("All locations failed: " + e3.getMessage())
+            SampleResult.setResponseMessage("FAILED: Primary=" + e.getMessage() + " | Temp=" + e2.getMessage() + " | Home=" + e3.getMessage())
+            SampleResult.setSuccessful(false)
+        }
+    }
 }
-          </stringProp>
+]]></stringProp>
         </JSR223Sampler>
         <hashTree/>
         
-        <!-- Debug Sampler to see system information -->
-        <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="System Info Debug" enabled="true">
-          <boolProp name="displayJMeterVariables">true</boolProp>
-          <boolProp name="displayJMeterProperties">true</boolProp>
-          <boolProp name="displaySystemProperties">true</boolProp>
-        </DebugSampler>
-        <hashTree/>
-        
-        <!-- View Results Tree to see response in logs -->
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
